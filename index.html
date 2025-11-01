@@ -34,7 +34,6 @@
     </div>
 
     <script>
-        // Select DOM elements
         const loginScreen = document.getElementById("login-screen");
         const chatScreen = document.getElementById("chat-screen");
         const usernameInput = document.getElementById("username-input");
@@ -43,9 +42,8 @@
         const chatForm = document.getElementById("chat-form");
         const msgInput = document.getElementById("msg-input");
 
-        let conn; // WebSocket connection
+        let conn;
 
-        // Join button click handler
         joinBtn.onclick = () => {
             const username = usernameInput.value.trim();
             if (username === "") {
@@ -53,26 +51,20 @@
                 return;
             }
 
-            // Connect to WebSocket
-            // The "ws" protocol is used for WebSockets (or "wss" for secure)
             const host = document.location.host;
             conn = new WebSocket(`ws://${host}/ws?username=${username}`);
 
-            // Handle connection opening
             conn.onopen = () => {
                 console.log("WebSocket connection established.");
-                // Show chat screen
                 loginScreen.style.display = "none";
                 chatScreen.style.display = "block";
             };
 
-            // Handle incoming messages
             conn.onmessage = (e) => {
                 const msg = JSON.parse(e.data);
                 appendMessage(msg);
             };
 
-            // Handle connection closing
             conn.onclose = () => {
                 console.log("WebSocket connection closed.");
                 alert("Connection lost. Please refresh the page.");
@@ -80,26 +72,21 @@
                 chatScreen.style.display = "none";
             };
 
-            // Handle connection errors
             conn.onerror = (err) => {
                 console.error("WebSocket error: ", err);
             };
         };
 
-        // Chat form submit handler
         chatForm.onsubmit = (e) => {
             e.preventDefault();
             const message = msgInput.value.trim();
             if (message === "" || !conn) {
                 return;
             }
-            // Send the message (as raw text) to the server
             conn.send(message);
-            // Clear the input field
             msgInput.value = "";
         };
 
-        // Helper function to append a message to the chat window
         function appendMessage(msg) {
             const msgEl = document.createElement("div");
             msgEl.classList.add("msg");
@@ -115,9 +102,9 @@
             }
 
             messagesDiv.appendChild(msgEl);
-            // Scroll to the bottom
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     </script>
 </body>
+
 </html>
