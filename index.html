@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Chat</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        #login-screen { text-align: center; margin-top: 100px; }
+        #chat-screen { display: none; }
+        #messages { width: 100%; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; background-color: #fff; padding: 10px; height: 400px; overflow-y: scroll; }
+        #chat-form { display: flex; max-width: 600px; margin: 10px auto; }
+        #msg-input { flex-grow: 1; border: 1px solid #ccc; padding: 8px; }
+        #chat-form button { padding: 8px 12px; border: none; background-color: #007bff; color: white; cursor: pointer; }
+        .msg { margin-bottom: 8px; }
+        .msg strong { color: #007bff; }
+        .msg-join, .msg-leave { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h2>Enter Chat</h2>
+        <input type="text" id="username-input" placeholder="Enter your username...">
+        <button id="join-btn">Join</button>
+    </div>
+
+    <div id="chat-screen">
+        <div id="messages"></div>
+        <form id="chat-form">
+            <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Select DOM elements
+        const loginScreen = document.getElementById("login-screen");
+        const chatScreen = document.getElementById("chat-screen");
+        const usernameInput = document.getElementById("username-input");
+        const joinBtn = document.getElementById("join-btn");
+        const messagesDiv = document.getElementById("messages");
+        const chatForm = document.getElementById("chat-form");
+        const msgInput = document.getElementById("msg-input");
+
+        let conn; // WebSocket connection
+
+        // Join button click handler
+        joinBtn.onclick = () => {
+            const username = usernameInput.value.trim();
+            if (username === "") {
+                alert("Please enter a username.");
+                return;
+            }
+
+            // Connect to WebSocket
+            // The "ws" protocol is used for WebSockets (or "wss" for secure)
+            const host = document.location.host;
+            conn = new WebSocket(`ws://${host}/ws?username=${username}`);
+
+            // Handle connection opening
+            conn.onopen = () => {
+                console.log("WebSocket connection established.");
+                // Show chat screen
+                loginScreen.style.display = "none";
+                chatScreen.style.display = "block";
+            };
+
+            // Handle incoming messages
+            conn.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                appendMessage(msg);
+            };
+
+            // Handle connection closing
+            conn.onclose = () => {
+                console.log("WebSocket connection closed.");
+                alert("Connection lost. Please refresh the page.");
+                loginScreen.style.display = "block";
+                chatScreen.style.display = "none";
+            };
+
+            // Handle connection errors
+            conn.onerror = (err) => {
+                console.error("WebSocket error: ", err);
+            };
+        };
+
+        // Chat form submit handler
+        chatForm.onsubmit = (e) => {
+            e.preventDefault();
+            const message = msgInput.value.trim();
+            if (message === "" || !conn) {
+                return;
+            }
+            // Send the message (as raw text) to the server
+            conn.send(message);
+            // Clear the input field
+            msgInput.value = "";
+        };
+
+        // Helper function to append a message to the chat window
+        function appendMessage(msg) {
+            const msgEl = document.createElement("div");
+            msgEl.classList.add("msg");
+
+            if (msg.type === "chat") {
+                msgEl.innerHTML = `<strong>${msg.username}</strong> (${msg.timestamp}): ${msg.content}`;
+            } else if (msg.type === "join") {
+                msgEl.classList.add("msg-join");
+                msgEl.textContent = `(${msg.timestamp}) ${msg.username} has joined the chat.`;
+            } else if (msg.type === "leave") {
+                msgEl.classList.add("msg-leave");
+                msgEl.textContent = `(${msg.timestamp}) ${msg.username} has left the chat.`;
+            }
+
+            messagesDiv.appendChild(msgEl);
+            // Scroll to the bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
